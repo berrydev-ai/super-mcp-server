@@ -7,19 +7,19 @@ on:
     types: [milestoned, demilestoned]
   schedule:
     # Every Friday at 4 PM EST - Weekly milestone check (9 PM UTC)
-    - cron: '0 21 * * 5'
+    - cron: "0 21 * * 5"
   workflow_dispatch:
     inputs:
       action_type:
-        description: 'Milestone action to perform'
+        description: "Milestone action to perform"
         required: true
-        default: 'health_check'
+        default: "health_check"
         type: choice
         options:
-        - health_check
-        - create_milestone
-        - optimize_milestones
-        - milestone_report
+          - health_check
+          - create_milestone
+          - optimize_milestones
+          - milestone_report
 
 jobs:
   milestone-management:
@@ -29,7 +29,7 @@ jobs:
       issues: write
       pull-requests: read
       id-token: write
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -60,35 +60,35 @@ jobs:
             Bash(tail *)
           direct_prompt: |
             # Milestone Health Check
-            
+
             Perform automated milestone analysis for OnScript API:
-            
+
             ## Current Milestone Status
             - Review all active milestones and their progress
             - Calculate completion percentages
             - Identify at-risk milestones (behind schedule)
             - Analyze milestone scope and realistic completion dates
-            
+
             ## Issue Distribution Analysis
             - Check if issues are properly assigned to milestones
             - Identify issues without milestones that should have them
             - Review milestone balance (not overloaded)
             - Suggest issue redistributions if needed
-            
+
             ## Timeline Assessment
             - Compare milestone due dates with current progress
             - Identify milestones that need date adjustments
             - Flag milestones with unrealistic scopes
             - Suggest milestone prioritization changes
-            
+
             ## Output Actions
             1. Create a milestone health report as a GitHub issue
             2. Comment on at-risk milestones with specific recommendations
             3. Suggest new milestones if gaps are identified
             4. Flag overdue or stalled milestones for team attention
-            
+
             Title the report: "📊 Milestone Health Check - [Date]"
-            
+
             Include actionable recommendations and timeline adjustments.
 
       - name: Milestone Event Handler
@@ -115,30 +115,30 @@ jobs:
             Bash(tail *)
           direct_prompt: |
             # Milestone Event Response
-            
+
             A milestone event occurred: ${{ github.event.action }}
             Milestone: "${{ github.event.milestone.title }}"
-            
+
             ## Event Analysis
             - Analyze the milestone change and its impact
             - Review milestone scope and timeline
             - Check for dependent milestones or issues
             - Assess resource allocation needs
-            
+
             ## Automated Response
             Based on the event type:
             - **Created**: Validate milestone scope and suggest initial issue assignments
             - **Edited**: Analyze changes and update dependent items
             - **Closed**: Generate completion report and suggest next milestones
             - **Opened**: Review milestone readiness and prerequisites
-            
+
             ## Recommendations
             Provide specific recommendations for:
             - Issue assignments to this milestone
             - Timeline considerations
             - Dependencies that need attention
             - Team communication needs
-            
+
             Post recommendations as a comment on the milestone or create a tracking issue.
 
       - name: Issue Milestone Assignment
@@ -165,29 +165,29 @@ jobs:
             Bash(tail *)
           direct_prompt: |
             # Issue Milestone Assignment Analysis
-            
+
             Issue #${{ github.event.issue.number }} was ${{ github.event.action }}
             ${{ github.event.action == 'milestoned' && format('Added to milestone: {0}', github.event.milestone.title) || 'Removed from milestone' }}
-            
+
             ## Assignment Validation
             - Analyze if the milestone assignment makes sense
             - Check milestone capacity and timeline impact
             - Verify issue priority aligns with milestone goals
             - Identify any conflicts or dependencies
-            
+
             ## Milestone Impact Assessment
             - Calculate how this change affects milestone timeline
             - Check if milestone scope remains balanced
             - Identify other issues that might need reassignment
             - Assess milestone completion probability
-            
+
             ## Automated Recommendations
             If assignment seems suboptimal:
             - Suggest better milestone alternatives
             - Recommend scope adjustments
             - Flag potential timeline issues
             - Suggest prerequisite issues that should be included
-            
+
             Comment on the issue with analysis and recommendations if action is needed.
 
       - name: Smart Milestone Creation
@@ -214,27 +214,27 @@ jobs:
             Bash(tail *)
           direct_prompt: |
             # Smart Milestone Creation
-            
+
             Analyze current project state and suggest new milestone creation:
-            
+
             ## Backlog Analysis
             - Review issues without milestones
             - Identify natural feature groupings
             - Analyze technical dependencies
             - Consider business priority patterns
-            
+
             ## Milestone Strategy
             - Suggest milestone themes and goals
             - Recommend timeline and scope
             - Propose success criteria
             - Identify resource requirements
-            
+
             ## Implementation Plan
             - Create detailed milestone description
             - Suggest initial issue assignments
             - Recommend milestone dependencies
             - Plan milestone communication strategy
-            
+
             Create new milestone(s) with comprehensive descriptions and initial issue assignments.
 
       - name: Milestone Optimization
@@ -261,25 +261,25 @@ jobs:
             Bash(tail *)
           direct_prompt: |
             # Milestone Optimization Analysis
-            
+
             Optimize milestone structure and assignments for OnScript API:
-            
+
             ## Current State Analysis
             - Map all milestones and their current status
             - Identify overloaded or underutilized milestones
             - Analyze milestone dependencies and conflicts
             - Review milestone timeline feasibility
-            
+
             ## Optimization Opportunities
             - Suggest milestone consolidation or splitting
             - Recommend issue redistributions
             - Identify milestone gaps or overlaps
             - Propose timeline adjustments
-            
+
             ## Strategic Realignment
             - Align milestones with business priorities
             - Balance technical debt and feature work
             - Ensure sustainable development pace
             - Plan for testing and documentation
-            
+
             Create detailed optimization report with specific actionable recommendations.

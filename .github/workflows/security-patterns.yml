@@ -4,7 +4,7 @@
 name: Security Audit
 on:
   schedule:
-    - cron: '0 7 * * 0' # Weekly security audit on Sundays at 2 AM EST (7 AM UTC)
+    - cron: "0 7 * * 0" # Weekly security audit on Sundays at 2 AM EST (7 AM UTC)
   workflow_dispatch:
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -21,29 +21,29 @@ jobs:
       - name: Secret Scanning Audit
         run: |
           echo "🔍 Performing security audit..."
-          
+
           # Check for potential secret exposure patterns
           echo "Checking for hardcoded secrets..."
           if grep -r "sk-ant-" --include="*.yml" --include="*.yaml" --exclude-dir=".git" . | grep -v "secrets\."; then
             echo "::error::Potential hardcoded API key found"
             exit 1
           fi
-          
+
           # Check for insecure logging patterns
           echo "Checking for insecure logging patterns..."
           if grep -r "echo.*secrets\." --include="*.yml" --include="*.yaml" . ; then
             echo "::warning::Potential secret logging pattern detected"
           fi
-          
+
           # Verify all workflows have security validation
           echo "Checking workflow security measures..."
           workflow_count=$(find .github/workflows -name "claude-*.yml" | wc -l)
           security_count=$(grep -l "Security Validation" .github/workflows/claude-*.yml | wc -l)
-          
+
           if [ "$workflow_count" -ne "$security_count" ]; then
             echo "::warning::Some Claude workflows may be missing security validation"
           fi
-          
+
           echo "✅ Security audit completed"
           echo "- Workflows checked: $workflow_count"
           echo "- Security validations: $security_count"
@@ -52,29 +52,29 @@ jobs:
         run: |
           cat > security-report.md << 'EOF'
           # Security Audit Report
-          
+
           ## API Key Protection Status
           - ✅ All API keys stored in GitHub Secrets
           - ✅ Secret masking enabled in workflow logs
           - ✅ Security validation added to workflows
           - ✅ No hardcoded secrets detected
-          
+
           ## Security Measures Implemented
           1. **Secret Validation**: All workflows validate API key presence before execution
           2. **Logging Protection**: API keys never exposed in workflow logs
           3. **Environment Isolation**: Secrets accessed via environment variables only
           4. **Format Validation**: Basic key format checks without exposure
           5. **Automated Scanning**: Weekly security audits for potential issues
-          
+
           ## Recommendations
           - Monitor GitHub Security tab for secret scanning alerts
           - Rotate API keys periodically as security best practice  
           - Review workflow logs regularly for any security anomalies
           - Keep security measures updated as workflows evolve
           EOF
-          
+
           echo "📋 Security report generated"
-          
+
       - name: Check GitHub Secret Scanning Status
         run: |
           echo "ℹ️ Security Reminders:"

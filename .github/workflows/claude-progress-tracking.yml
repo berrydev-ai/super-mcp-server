@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       report_type:
-        description: 'Type of report to generate'
+        description: "Type of report to generate"
         required: true
-        default: 'velocity_analysis'
+        default: "velocity_analysis"
         type: choice
         options:
-        - velocity_analysis
-        - project_performance
-        - project_dashboard
+          - velocity_analysis
+          - project_performance
+          - project_dashboard
 
 jobs:
   progress-tracking:
@@ -22,7 +22,7 @@ jobs:
       pull-requests: read
       actions: read
       id-token: write
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,9 +37,6 @@ jobs:
           echo "last_month=$(date -d '30 days ago' '+%Y-%m-%d')" >> $GITHUB_OUTPUT
           echo "today=$(date '+%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-
-
-
       - name: Velocity Analysis
         if: github.event.inputs.report_type == 'velocity_analysis'
         uses: anthropics/claude-code-action@v1
@@ -49,37 +46,37 @@ jobs:
             --allowedTools "Edit,Read,Write,View,Glob,Grep,Bash(gh:*),Bash(git:*),Bash(date:*),Bash(echo:*),Bash(printf:*)"
           prompt: |
             # Development Velocity Analysis
-            
+
             Deep dive into team velocity and productivity patterns:
-            
+
             ## Historical Velocity Trends
             - Calculate velocity over last 6 sprints/months
             - Identify patterns, seasonality, and anomalies
             - Compare planned vs. actual completion rates
             - Analyze velocity by issue type and complexity
-            
+
             ## Productivity Factors Analysis
             - **Positive Factors**: What increases team velocity
             - **Impediments**: Common blockers and their impact
             - **Process Efficiency**: Planning accuracy, requirement clarity
             - **Technical Factors**: Code quality impact on velocity
-            
+
             ## Predictive Insights
             - Forecast completion dates for current milestones
             - Identify optimal sprint sizing based on historical data
             - Predict capacity needs for upcoming features
             - Risk assessment for timeline commitments
-            
+
             ## Optimization Recommendations
             - Process improvements to increase velocity
             - Technical investments to reduce friction
             - Team structure or workflow adjustments
             - Tool improvements or automation opportunities
-            
+
             Create detailed velocity analysis report with actionable recommendations.
 
       - name: Project Performance Dashboard
-        if: github.event.inputs.report_type == 'project_performance'  
+        if: github.event.inputs.report_type == 'project_performance'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -87,39 +84,39 @@ jobs:
             --allowedTools "Edit,Read,Write,View,Glob,Grep,Bash(gh:*),Bash(git:*),Bash(date:*),Bash(echo:*),Bash(printf:*)"
           prompt: |
             # Project Performance Dashboard
-            
+
             Generate comprehensive project performance analytics:
-            
+
             ## Individual Contributions
             - Analyze contributions by contributor (commits, PRs, issues)
             - Code review participation and quality
             - Knowledge sharing and mentoring activities
             - Specialization areas and cross-training progress
-            
+
             ## Collaboration Metrics
             - Cross-project collaboration frequency and effectiveness
             - Code review response times and thoroughness
             - Pair programming and knowledge transfer activities
             - Communication effectiveness in issues and PRs
-            
+
             ## Skill Development Tracking
             - Technical skill progression indicators
             - New technology adoption and learning
             - Leadership and process improvement contributions
             - Documentation and knowledge sharing contributions
-            
+
             ## Project Health Indicators
             - Workload distribution and balance
             - Stress indicators (issue resolution delays, blocked items)
             - Project morale indicators (communication tone, collaboration willingness)
             - Growth trajectory and development progress
-            
+
             ## Recommendations
             - Individual development opportunities
             - Project balance and workload optimization
             - Skill gap identification and training needs
             - Process improvements to support project effectiveness
-            
+
             **Note**: Focus on constructive insights that help project growth, not performance evaluation.
 
       - name: Project Dashboard Update
@@ -131,38 +128,38 @@ jobs:
             --allowedTools "Edit,Read,Write,View,Glob,Grep,Bash(gh:*),Bash(git:*),Bash(date:*),Bash(echo:*),Bash(printf:*)"
           prompt: |
             # Project Dashboard Generation
-            
+
             Create comprehensive project dashboard for stakeholders:
-            
+
             ## Current Project Status
             - Overall project health and progress summary
             - Active milestones and their completion status
             - Critical path items and timeline adherence
             - Resource utilization and capacity planning
-            
+
             ## Key Performance Indicators
             - **Development KPIs**: Velocity, cycle time, throughput
             - **Quality KPIs**: Bug rate, test coverage, customer satisfaction
             - **Process KPIs**: Planning accuracy, estimation reliability
             - **Business KPIs**: Feature adoption, API usage, performance metrics
-            
+
             ## Risk & Issue Management
             - Active risks and mitigation strategies
             - Escalated issues requiring stakeholder attention
             - Dependency management and external blockers
             - Capacity constraints and resource needs
-            
+
             ## Upcoming Deliverables
             - Next milestone deliverables and dates
             - Feature roadmap and business impact
             - Technical initiatives and infrastructure improvements
             - Integration and deployment planning
-            
+
             ## Stakeholder Actions Needed
             - Decisions requiring stakeholder input
             - Resource approval requests
             - Strategic direction clarifications
             - External dependency escalations
-            
+
             **Output**: Create executive-level dashboard issue with clear visual indicators
             **Labels**: `dashboard`, `stakeholder-report`, `executive-summary`

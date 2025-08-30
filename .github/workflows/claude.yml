@@ -40,13 +40,13 @@ jobs:
             echo "::error::ANTHROPIC_API_KEY secret is not configured"
             exit 1
           fi
-          
+
           # Validate key format without logging the actual key
           if [[ ${#ANTHROPIC_API_KEY} -lt 10 ]]; then
             echo "::error::API key appears to be invalid (too short)"
             exit 1
           fi
-          
+
           # Security checks passed
           echo "✅ API key validation successful"
           echo "✅ Secret masking verified"
@@ -57,7 +57,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          
+
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
@@ -70,4 +70,3 @@ jobs:
           # or https://docs.anthropic.com/en/docs/claude-code/sdk#command-line for available options
           claude_args: |
             --allowedTools "Edit,Read,Write,View,Glob,Grep,Bash(gh:*),Bash(git:*)"
-
