@@ -34,7 +34,8 @@ Thumbs.db
 
 # Test files
 testdata/
-example-data/
+#example-data/
 
 # Temporary files
 /tmp/
+INSTRUCT.md

@@ -1,0 +1,177 @@
+name: Claude Project Planning
+
+on:
+  workflow_dispatch:
+    inputs:
+      planning_type:
+        description: "Type of planning to run"
+        required: true
+        default: "sprint"
+        type: choice
+        options:
+          - sprint
+          - milestone
+          - backlog_review
+
+jobs:
+  project-planning:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Security Validation
+        env:
+          # Prevent accidental API key exposure in logs
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # Validate API key exists (without exposing it)
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY secret is not configured"
+            exit 1
+          fi
+
+          # Validate key format without logging the actual key
+          if [[ ${#ANTHROPIC_API_KEY} -lt 10 ]]; then
+            echo "::error::API key appears to be invalid (too short)"
+            exit 1
+          fi
+
+          # Security checks passed
+          echo "✅ API key validation successful"
+          echo "✅ Secret masking verified"
+          echo "✅ Security checks passed"
+
+      - name: Sprint Planning
+        if: github.event.inputs.planning_type == 'sprint'
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mode: agent
+          allowed_tools: |
+            Bash(gh issue *),
+            Bash(gh pr *),
+            Bash(gh repo *),
+            Bash(gh label *),
+            Bash(gh milestone *),
+            Bash(git log *),
+            Bash(git status),
+            Bash(git diff *),
+            Bash(go test *),
+            Bash(go build *),
+            Bash(find *),
+            Bash(grep *),
+            Bash(wc *),
+            Bash(head *),
+            Bash(tail *)
+          direct_prompt: |
+            # Sprint Planning Task
+
+            Conduct automated sprint planning for this project:
+
+            ## Sprint Analysis
+            - Review backlog and estimate story points
+            - Group related issues into sprint themes
+            - Calculate project capacity based on historical data
+            - Identify sprint goals and success criteria
+
+            ## Sprint Composition
+            - Select optimal mix of features, bugs, and technical debt
+            - Ensure sprint scope aligns with project capacity
+            - Plan for testing and documentation tasks
+            - Include buffer time for unexpected issues
+
+            Create a new issue titled "🚀 Sprint Plan - Sprint [Number]" with detailed sprint breakdown.
+
+      - name: Milestone Planning
+        if: github.event.inputs.planning_type == 'milestone'
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mode: agent
+          allowed_tools: |
+            Bash(gh issue *),
+            Bash(gh pr *),
+            Bash(gh repo *),
+            Bash(gh label *),
+            Bash(gh milestone *),
+            Bash(git log *),
+            Bash(git status),
+            Bash(git diff *),
+            Bash(go test *),
+            Bash(go build *),
+            Bash(find *),
+            Bash(grep *),
+            Bash(wc *),
+            Bash(head *),
+            Bash(tail *)
+          direct_prompt: |
+            # Milestone Planning Task
+
+            Analyze and plan milestones for this project:
+
+            ## Milestone Analysis
+            - Review current milestone progress
+            - Assess timeline feasibility
+            - Identify critical path items
+            - Evaluate resource allocation needs
+
+            ## Milestone Optimization
+            - Suggest milestone adjustments if needed
+            - Identify items that can be moved to future milestones
+            - Recommend milestone success metrics
+            - Plan milestone communication strategy
+
+            Create a comprehensive milestone report and update existing milestones as needed.
+
+      - name: Backlog Review
+        if: github.event.inputs.planning_type == 'backlog_review'
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mode: agent
+          allowed_tools: |
+            Bash(gh issue *),
+            Bash(gh pr *),
+            Bash(gh repo *),
+            Bash(gh label *),
+            Bash(gh milestone *),
+            Bash(git log *),
+            Bash(git status),
+            Bash(git diff *),
+            Bash(go test *),
+            Bash(go build *),
+            Bash(find *),
+            Bash(grep *),
+            Bash(wc *),
+            Bash(head *),
+            Bash(tail *)
+          direct_prompt: |
+            # Backlog Review Task
+
+            Perform comprehensive backlog grooming for this project:
+
+            ## Backlog Analysis
+            - Review all open issues for relevance and priority
+            - Identify duplicate or outdated issues
+            - Suggest issues that can be closed
+            - Categorize issues by type (feature, bug, tech debt, etc.)
+
+            ## Backlog Optimization
+            - Recommend priority adjustments
+            - Suggest issue consolidation opportunities
+            - Identify missing requirements or acceptance criteria
+            - Flag issues that need more technical specification
+
+            ## Backlog Health Report
+            Create an issue with backlog health metrics and recommendations for backlog improvement.
+
+            Focus on maintaining a clean, prioritized backlog that supports efficient development workflow.

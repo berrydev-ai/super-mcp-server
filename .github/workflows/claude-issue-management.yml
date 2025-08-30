@@ -1,0 +1,342 @@
+name: Claude Issue Management
+
+on:
+  issues:
+    types: [opened, edited, assigned, unassigned, closed]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      management_action:
+        description: "Issue management action"
+        required: true
+        default: "triage_all"
+        type: choice
+        options:
+          - triage_all
+          - estimate_issues
+          - sprint_planning
+          - dependency_analysis
+
+concurrency:
+  group: issue-management-${{ github.event.issue.number || 'manual' }}
+  cancel-in-progress: false
+
+jobs:
+  issue-management:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Stage 1 - Project Manager Triage
+        if: github.event_name == 'issues' && github.event.action == 'opened'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_bots: "claude,linear"
+          claude_args: |
+            --allowedTools "Edit,Read,Write,View,Glob,Grep,Bash(gh:*),Bash(git:*)"
+          prompt: |
+            # Stage 1: Project Manager Triage
+
+            New issue opened: #${{ github.event.issue.number }} - "${{ github.event.issue.title }}"
+
+            ## STAGE 1: COMPREHENSIVE ISSUE ANALYSIS
+            Your role is PROJECT MANAGER - analyze the user's brief description and expand it into a complete technical specification.
+
+            ## Your Tasks
+            1. **Understand the User's Intent**: Read their simple description and understand what they actually need
+            2. **Fill in Missing Details**: Based on your codebase knowledge, add technical requirements, acceptance criteria, implementation notes
+            3. **Ask Clarifying Questions**: If the description is too vague, ask specific questions to the issue author
+            4. **Complete Technical Analysis**: Determine complexity, affected components, dependencies, and implementation approach
+
+            ## Effort & Impact Assessment
+            - Estimate development effort: Small (1-2 days), Medium (3-5 days), Large (1-2 weeks), XLarge (2+ weeks)
+            - Assess project impact and urgency: Low, Medium, High, Critical
+            - Identify security, performance, or architectural implications
+            - Check for external dependencies or integration requirements
+
+            ## Resolution Path Decision
+            Based on your analysis, decide the appropriate path:
+
+            **Path A - Auto-Resolution** (Simple, well-defined issues):
+            - Clear requirements with no ambiguity
+            - Low risk and limited scope
+            - No complex business logic required
+            - Standard implementation patterns
+            → Apply label: `auto-resolve` 
+
+            **Path B - Manual Assignment** (Complex or strategic issues):
+            - Requires architectural decisions
+            - Complex application logic or user experience considerations  
+            - High risk or significant system impact
+            - Needs human creativity or judgment
+            → Apply label: `manual-assignment`
+
+            **Path C - Needs Clarification**:
+            - Unclear requirements or acceptance criteria
+            - Missing technical specifications
+            - Conflicting or incomplete information
+            → Apply label: `needs-triage`
+
+            ## Required Actions
+            1. **Clean Conflicting Labels First**:
+               - Remove any existing resolution path labels: `auto-resolve`, `manual-assignment`, `needs-triage`
+               - Remove any existing priority labels: `priority/low`, `priority/medium`, `priority/high`, `priority/critical`
+               - Remove any existing effort labels: `effort/small`, `effort/medium`, `effort/large`, `effort/xlarge`
+
+            2. **Apply New Labels**:
+               - Resolution path: `auto-resolve`, `manual-assignment`, or `needs-triage`
+               - Type: `bug`, `enhancement`, `feature`, `documentation`
+               - Priority: `priority/low`, `priority/medium`, `priority/high`, `priority/critical`
+               - Effort: `effort/small`, `effort/medium`, `effort/large`, `effort/xlarge`
+               - Status: `pm-reviewed`
+
+            3. **Add PM Analysis Comment**:
+            ```
+            ## 📋 Project Manager Analysis
+
+            **Resolution Path**: [Auto-resolve/Manual Assignment/Needs Clarification]
+            **Estimated Effort**: [Small/Medium/Large/XLarge] 
+            **Priority Level**: [Low/Medium/High/Critical]
+            **Affected Components**: [List key areas]
+
+            ### Technical Assessment
+            [Your analysis of technical requirements and complexity]
+
+            ### Project Impact
+            [Assessment of urgency and project value]
+
+            ### Recommended Next Steps
+            [Specific actions based on resolution path chosen]
+
+            ### Assignment Recommendations
+            [If manual assignment: suggest developer based on expertise]
+            ```
+
+            4. **For Auto-Resolve Issues**: Add `@claude` mention in your comment to trigger Stage 2
+            5. **For Manual Assignment**: Suggest specific developer and milestone
+            6. **For Needs Clarification**: Tag original author with specific questions
+
+      - name: PM Response to User Comments
+        if: |
+          github.event_name == 'issue_comment' && 
+          github.event.comment.user.login != 'claude' &&
+          contains(github.event.issue.labels.*.name, 'needs-triage') &&
+          !contains(github.event.issue.labels.*.name, 'pm-reviewed')
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_bots: "claude,linear"
+          claude_args: |
+            --allowedTools "Edit,Read,Write,View,Glob,Grep,Bash(gh:*),Bash(git:*)"
+          prompt: |
+            # PM Follow-up Analysis
+
+            Issue: #${{ github.event.issue.number }} - "${{ github.event.issue.title }}"
+            User just responded with: "${{ github.event.comment.body }}"
+
+            ## Your Tasks
+            1. **Review Conversation**: Look at the full issue description and all comments to understand the complete context
+            2. **Assess Completeness**: Determine if you now have enough information to proceed with technical analysis
+            3. **Choose Path**:
+               - If **sufficient info**: Proceed with complete PM analysis, add all labels, and determine resolution path
+               - If **still unclear**: Ask additional specific questions
+
+            ## If You Have Enough Info - Complete Analysis
+            Provide the full PM analysis with:
+            - Complete technical specification based on all information gathered
+            - Technical requirements and acceptance criteria  
+            - Affected components and implementation approach
+            - Resolution path decision (Auto-resolve/Manual/Still needs clarification)
+            - **Clean conflicting labels first** (remove existing resolution/priority/effort labels)
+            - Apply appropriate labels: resolution path + effort + priority + `pm-reviewed`
+            - If auto-resolve: add `@claude` mention to trigger Stage 2
+
+            ## If Still Need More Info
+            Ask specific follow-up questions and keep `needs-triage` label (don't add `pm-reviewed` yet)
+
+            Focus on having a natural conversation with the user to gather all needed details.
+
+      - name: Issue State Change Handler
+        if: github.event_name == 'issues' && github.event.action != 'opened'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Bash(gh issue *),Bash(gh pr *),Bash(gh repo *),Bash(gh label *),Bash(gh milestone *),Bash(git log *),Bash(git status),Bash(git diff *),Bash(go test *),Bash(go build *),Bash(find *),Bash(grep *),Bash(wc *),Bash(head *),Bash(tail *)"
+          prompt: |
+            # Issue State Change Analysis
+
+            Issue #${{ github.event.issue.number }} was ${{ github.event.action }}
+            Title: "${{ github.event.issue.title }}"
+
+            ## State Change Response
+            Based on action "${{ github.event.action }}":
+
+            ### For Closed Issues
+            - Analyze resolution and capture lessons learned
+            - Update related issues or documentation
+            - Check if follow-up issues are needed
+            - Update project metrics and velocity calculations
+
+            ### For Label Changes
+            - Validate label consistency and accuracy
+            - Check if milestone assignment needs updating
+            - Assess if priority changes affect sprint planning
+            - Flag any conflicting or missing labels
+
+            ### For Assignment Changes  
+            - Analyze workload distribution across contributors
+            - Check assignee expertise match with issue requirements
+            - Flag potential overallocation
+            - Suggest workload balancing if needed
+
+            ### For Edits
+            - Re-analyze changed requirements
+            - Update effort estimates if scope changed
+            - Check if labels/milestone need updating
+            - Flag scope creep if significant changes detected
+
+            ## Automated Responses
+            - Add helpful comments for significant state changes
+            - Update related issues with cross-references
+            - Suggest process improvements if patterns emerge
+            - Flag issues that may need contributor discussion
+
+      - name: Sprint Planning Automation
+        if: github.event.inputs.management_action == 'sprint_planning'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Bash(gh issue *),Bash(gh pr *),Bash(gh repo *),Bash(gh label *),Bash(gh milestone *),Bash(git log *),Bash(git status),Bash(git diff *),Bash(go test *),Bash(go build *),Bash(find *),Bash(grep *),Bash(wc *),Bash(head *),Bash(tail *)"
+          prompt: |
+            # Automated Sprint Planning
+
+            Conduct intelligent sprint planning for the project:
+
+            ## Sprint Preparation
+            - Analyze project velocity from recent sprints
+            - Review current issue priorities and estimates
+            - Identify blocking dependencies
+            - Calculate available project capacity
+
+            ## Sprint Composition Strategy
+            - **70% Features/Enhancements**: High-priority user-facing improvements
+            - **20% Bug Fixes**: Critical and high-priority bugs
+            - **10% Technical Debt**: Code quality, performance, security improvements
+
+            ## Sprint Selection Criteria
+            1. **Ready Issues**: Well-defined acceptance criteria, no blockers
+            2. **Balanced Workload**: Mix of different complexity levels
+            3. **Dependency Management**: Ensure prerequisite issues are included
+            4. **Risk Mitigation**: Include buffer time for unknown issues
+
+            ## Automated Sprint Creation
+            Create a new milestone for the upcoming sprint with:
+            - Clear sprint goals and success criteria
+            - Optimal issue selection based on priority and capacity
+            - Balanced workload distribution
+            - Risk assessment and mitigation plans
+
+            ## Sprint Planning Report
+            Generate comprehensive sprint planning document including:
+            - Sprint scope and objectives
+            - Selected issues with rationale
+            - Project capacity analysis
+            - Risk factors and mitigation strategies
+            - Definition of Done checklist
+
+            Title: "🚀 Sprint [Number] - [Start Date] to [End Date]"
+
+      - name: Bulk Issue Triage
+        if: github.event.inputs.management_action == 'triage_all'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Bash(gh issue *),Bash(gh pr *),Bash(gh repo *),Bash(gh label *),Bash(gh milestone *),Bash(git log *),Bash(git status),Bash(git diff *),Bash(go test *),Bash(go build *),Bash(find *),Bash(grep *),Bash(wc *),Bash(head *),Bash(tail *)"
+          prompt: |
+            # Bulk Issue Triage & Organization
+
+            Perform comprehensive triage of all open issues:
+
+            ## Triage Analysis
+            - Review all open issues for proper labeling
+            - Identify issues missing critical information
+            - Flag stale or outdated issues
+            - Group related issues for potential consolidation
+
+            ## Priority & Effort Assessment
+            - Validate priority assignments against current project needs
+            - Update effort estimates based on recent development patterns
+            - Identify issues that have grown in scope
+            - Flag issues with conflicting priorities
+
+            ## Organizational Improvements
+            - Suggest label standardization improvements
+            - Recommend milestone assignments for orphaned issues
+            - Identify issues ready for development
+            - Flag issues needing more specification
+
+            ## Batch Operations
+            - Apply consistent labeling across similar issues
+            - Update milestone assignments based on current priorities
+            - Close duplicate or obsolete issues
+            - Create meta-issues for large feature sets
+
+            ## Triage Report
+            Create comprehensive triage report with:
+            - Issues processed and changes made
+            - Recommendations for contributor follow-up
+            - Process improvement suggestions
+            - Metrics on issue backlog health
+
+      - name: Dependency Analysis
+        if: github.event.inputs.management_action == 'dependency_analysis'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Bash(gh issue *),Bash(gh pr *),Bash(gh repo *),Bash(gh label *),Bash(gh milestone *),Bash(git log *),Bash(git status),Bash(git diff *),Bash(go test *),Bash(go build *),Bash(find *),Bash(grep *),Bash(wc *),Bash(head *),Bash(tail *)"
+          prompt: |
+            # Issue Dependency Analysis
+
+            Analyze and map issue dependencies across the project:
+
+            ## Dependency Mapping
+            - Identify explicit dependencies mentioned in issues
+            - Discover implicit dependencies through code analysis
+            - Map cross-component dependencies
+            - Identify circular dependencies or conflicts
+
+            ## Critical Path Analysis
+            - Determine critical path for major features
+            - Identify bottleneck issues blocking multiple items
+            - Calculate dependency chain impact on timelines
+            - Flag high-risk dependency relationships
+
+            ## Optimization Recommendations
+            - Suggest dependency resolution order
+            - Recommend issue splitting to reduce dependencies
+            - Identify parallel development opportunities
+            - Propose architectural changes to reduce coupling
+
+            ## Visual Dependency Map
+            Create issues describing dependency relationships with:
+            - Clear dependency hierarchy diagrams
+            - Critical path identification
+            - Timeline impact analysis
+            - Recommended resolution strategies
+
+            Use labels to track: `depends-on`, `blocks`, `related-to` for better visualization.
