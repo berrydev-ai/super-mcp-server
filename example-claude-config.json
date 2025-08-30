@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "super-data": {
+      "command": "/absolute/path/to/your/super-mcp-server",
+      "args": [],
+      "env": {}
+    }
+  }
+}
