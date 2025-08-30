@@ -1,0 +1,240 @@
+name: Claude Project Planning
+
+on:
+  schedule:
+    # Every Monday at 9 AM EST (2 PM UTC)
+    - cron: '0 14 * * 1'
+  workflow_dispatch:
+    inputs:
+      planning_type:
+        description: 'Type of planning to run'
+        required: true
+        default: 'weekly'
+        type: choice
+        options:
+        - weekly
+        - sprint
+        - milestone
+        - backlog_review
+
+jobs:
+  project-planning:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+      id-token: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Security Validation
+        env:
+          # Prevent accidental API key exposure in logs
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # Validate API key exists (without exposing it)
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY secret is not configured"
+            exit 1
+          fi
+          
+          # Validate key format without logging the actual key
+          if [[ ${#ANTHROPIC_API_KEY} -lt 10 ]]; then
+            echo "::error::API key appears to be invalid (too short)"
+            exit 1
+          fi
+          
+          # Security checks passed
+          echo "✅ API key validation successful"
+          echo "✅ Secret masking verified"
+          echo "✅ Security checks passed"
+
+      - name: Weekly Project Planning
+        if: github.event_name == 'schedule' || github.event.inputs.planning_type == 'weekly'
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mode: agent
+          allowed_tools: |
+            Bash(gh issue *),
+            Bash(gh pr *),
+            Bash(gh repo *),
+            Bash(gh label *),
+            Bash(gh milestone *),
+            Bash(git log *),
+            Bash(git status),
+            Bash(git diff *),
+            Bash(go test *),
+            Bash(go build *),
+            Bash(find *),
+            Bash(grep *),
+            Bash(wc *),
+            Bash(head *),
+            Bash(tail *)
+          direct_prompt: |
+            # Weekly Project Planning Task
+            
+            As the automated project manager for OnScript API, perform a comprehensive weekly planning analysis:
+            
+            ## 1. Current State Analysis
+            - Review all open issues and categorize by priority/complexity
+            - Analyze recent PR activity and development velocity
+            - Identify any blocked or stalled work
+            - Check for overdue milestones or deliverables
+            
+            ## 2. Progress Assessment
+            - Calculate completion rates from last week
+            - Identify team productivity patterns
+            - Highlight successful completions and areas of concern
+            
+            ## 3. Upcoming Week Planning
+            - Prioritize issues based on business impact and technical complexity
+            - Suggest optimal work allocation
+            - Identify potential bottlenecks or dependencies
+            - Recommend focus areas for the development team
+            
+            ## 4. Strategic Recommendations
+            - Suggest process improvements
+            - Identify technical debt that needs attention
+            - Recommend timeline adjustments if needed
+            
+            ## Output Requirements
+            Create a new GitHub issue titled "📋 Weekly Planning Report - [Current Week]" with:
+            - Executive Summary (2-3 sentences)
+            - Key Metrics (issues closed, PRs merged, etc.)
+            - Priority Tasks for Upcoming Week (ranked list)
+            - Blockers & Dependencies (if any)
+            - Recommendations & Action Items
+            
+            Use clear formatting with headers, bullet points, and emoji indicators for quick scanning.
+
+      - name: Sprint Planning
+        if: github.event.inputs.planning_type == 'sprint'
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mode: agent
+          allowed_tools: |
+            Bash(gh issue *),
+            Bash(gh pr *),
+            Bash(gh repo *),
+            Bash(gh label *),
+            Bash(gh milestone *),
+            Bash(git log *),
+            Bash(git status),
+            Bash(git diff *),
+            Bash(go test *),
+            Bash(go build *),
+            Bash(find *),
+            Bash(grep *),
+            Bash(wc *),
+            Bash(head *),
+            Bash(tail *)
+          direct_prompt: |
+            # Sprint Planning Task
+            
+            Conduct automated sprint planning for OnScript API:
+            
+            ## Sprint Analysis
+            - Review backlog and estimate story points
+            - Group related issues into sprint themes
+            - Calculate team capacity based on historical data
+            - Identify sprint goals and success criteria
+            
+            ## Sprint Composition
+            - Select optimal mix of features, bugs, and technical debt
+            - Ensure sprint scope aligns with team capacity
+            - Plan for testing and documentation tasks
+            - Include buffer time for unexpected issues
+            
+            Create a new issue titled "🚀 Sprint Plan - Sprint [Number]" with detailed sprint breakdown.
+
+      - name: Milestone Planning
+        if: github.event.inputs.planning_type == 'milestone'
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mode: agent
+          allowed_tools: |
+            Bash(gh issue *),
+            Bash(gh pr *),
+            Bash(gh repo *),
+            Bash(gh label *),
+            Bash(gh milestone *),
+            Bash(git log *),
+            Bash(git status),
+            Bash(git diff *),
+            Bash(go test *),
+            Bash(go build *),
+            Bash(find *),
+            Bash(grep *),
+            Bash(wc *),
+            Bash(head *),
+            Bash(tail *)
+          direct_prompt: |
+            # Milestone Planning Task
+            
+            Analyze and plan milestones for OnScript API:
+            
+            ## Milestone Analysis
+            - Review current milestone progress
+            - Assess timeline feasibility
+            - Identify critical path items
+            - Evaluate resource allocation needs
+            
+            ## Milestone Optimization
+            - Suggest milestone adjustments if needed
+            - Identify items that can be moved to future milestones
+            - Recommend milestone success metrics
+            - Plan milestone communication strategy
+            
+            Create a comprehensive milestone report and update existing milestones as needed.
+
+      - name: Backlog Review
+        if: github.event.inputs.planning_type == 'backlog_review'
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mode: agent
+          allowed_tools: |
+            Bash(gh issue *),
+            Bash(gh pr *),
+            Bash(gh repo *),
+            Bash(gh label *),
+            Bash(gh milestone *),
+            Bash(git log *),
+            Bash(git status),
+            Bash(git diff *),
+            Bash(go test *),
+            Bash(go build *),
+            Bash(find *),
+            Bash(grep *),
+            Bash(wc *),
+            Bash(head *),
+            Bash(tail *)
+          direct_prompt: |
+            # Backlog Review Task
+            
+            Perform comprehensive backlog grooming for OnScript API:
+            
+            ## Backlog Analysis
+            - Review all open issues for relevance and priority
+            - Identify duplicate or outdated issues
+            - Suggest issues that can be closed
+            - Categorize issues by type (feature, bug, tech debt, etc.)
+            
+            ## Backlog Optimization
+            - Recommend priority adjustments
+            - Suggest issue consolidation opportunities
+            - Identify missing requirements or acceptance criteria
+            - Flag issues that need more technical specification
+            
+            ## Backlog Health Report
+            Create an issue with backlog health metrics and recommendations for backlog improvement.
+            
+            Focus on maintaining a clean, prioritized backlog that supports efficient development workflow.

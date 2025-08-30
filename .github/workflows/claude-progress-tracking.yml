@@ -1,0 +1,328 @@
+name: Claude Progress Tracking & Reporting
+
+on:
+  schedule:
+    # Daily standup report at 8 AM EST Monday-Friday (1 PM UTC)
+    - cron: '0 13 * * 1-5'
+    # Weekly team report every Friday at 5 PM EST (10 PM UTC)
+    - cron: '0 22 * * 5' 
+    # Monthly project health report on 1st of month at 9 AM EST (2 PM UTC)
+    - cron: '0 14 1 * *'
+  workflow_dispatch:
+    inputs:
+      report_type:
+        description: 'Type of report to generate'
+        required: true
+        default: 'daily_standup'
+        type: choice
+        options:
+        - daily_standup
+        - weekly_summary
+        - monthly_health
+        - velocity_analysis
+        - team_performance
+        - project_dashboard
+
+jobs:
+  progress-tracking:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+      actions: read
+      id-token: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Calculate Dates
+        id: dates
+        run: |
+          echo "yesterday=$(date -d '24 hours ago' '+%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "last_week=$(date -d '7 days ago' '+%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "last_month=$(date -d '30 days ago' '+%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "today=$(date '+%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Daily Standup Report
+        if: (github.event.schedule == '0 13 * * 1-5') || github.event.inputs.report_type == 'daily_standup'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Edit,Read,Write,View,Glob,Grep,Bash(gh:*),Bash(git:*),Bash(date:*),Bash(echo:*),Bash(printf:*)"
+          prompt: |
+            # Daily Standup Automation
+            
+            Generate automated daily standup report for OnScript API team:
+            
+            ## Yesterday's Accomplishments
+            - Analyze closed issues and merged PRs from ${{ steps.dates.outputs.yesterday }} using:
+              - `gh issue list --state closed --search "closed:>=${{ steps.dates.outputs.yesterday }}"`
+              - `gh pr list --state merged --search "merged:>=${{ steps.dates.outputs.yesterday }}"`
+            - Calculate story points completed from recent completions
+            - Highlight significant milestones reached in the last day
+            - Identify successful completions and wins
+            
+            ## Today's Focus Areas
+            - Review active PRs and their status
+            - Identify issues currently in progress
+            - Flag urgent items needing attention today
+            - Highlight pending code reviews
+            
+            ## Blockers & Impediments
+            - Identify stalled PRs or issues
+            - Flag failed CI/CD runs or build issues
+            - Highlight dependency issues or external blockers
+            - Note any issues awaiting team input or decisions
+            
+            ## Team Coordination Needs
+            - Identify items needing collaboration
+            - Flag potential merge conflicts or integration issues  
+            - Highlight items needing technical discussion
+            - Note any resource allocation concerns
+            
+            ## Metrics Dashboard
+            - Current sprint burn-down status
+            - Open PR count and average age
+            - Issue resolution rate trend
+            - Code review response time
+            
+            **Output**: Create issue titled "📊 Daily Standup - [Date]" with structured report
+            **Labels**: `standup`, `daily-report`, `team-coordination`
+            
+            Keep report concise but actionable - focus on items needing team attention.
+
+      - name: Weekly Summary Report  
+        if: (github.event.schedule == '0 22 * * 5') || github.event.inputs.report_type == 'weekly_summary'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Edit,Read,Write,View,Glob,Grep,Bash(gh:*),Bash(git:*),Bash(date:*),Bash(echo:*),Bash(printf:*)"
+          prompt: |
+            # Weekly Project Summary
+            
+            Generate comprehensive weekly summary for OnScript API:
+            
+            ## Week's Achievements (Since ${{ steps.dates.outputs.last_week }})
+            - **Features Delivered**: List completed features using `gh issue list --state closed --search "closed:>=${{ steps.dates.outputs.last_week }} label:enhancement"`
+            - **Bugs Resolved**: Count and categorize fixed issues using `gh issue list --state closed --search "closed:>=${{ steps.dates.outputs.last_week }} label:bug"`
+            - **Technical Improvements**: Infrastructure, performance, and code quality gains
+            - **Documentation Updates**: New docs, API changes, README improvements
+            
+            ## Development Velocity Analysis
+            - **Issues Closed**: Total count with breakdown by type/priority
+            - **Story Points Completed**: Velocity trend analysis
+            - **PR Throughput**: Merge rate and review efficiency
+            - **Code Quality Metrics**: Test coverage, lint issues, technical debt
+            
+            ## Sprint/Milestone Progress
+            - Current milestone completion percentage
+            - Items ahead of schedule vs. behind schedule
+            - Scope changes or requirement updates
+            - Timeline adjustments needed
+            
+            ## Team Performance Insights
+            - Individual contributor highlights
+            - Collaboration effectiveness
+            - Knowledge sharing achievements
+            - Process improvement wins
+            
+            ## Upcoming Week Priorities
+            - Critical items for next week
+            - Resource allocation recommendations
+            - Risk mitigation planning
+            - Key deliverables and deadlines
+            
+            ## Action Items & Recommendations
+            - Process improvements identified
+            - Technical debt prioritization
+            - Team development needs
+            - Tool or infrastructure improvements
+            
+            **Output**: Create issue titled "📈 Weekly Summary - Week of [Date]"
+            **Labels**: `weekly-report`, `summary`, `team-metrics`
+            
+            Include charts/graphs using ASCII art or markdown tables where helpful.
+
+      - name: Monthly Health Report
+        if: (github.event.schedule == '0 14 1 * *') || github.event.inputs.report_type == 'monthly_health'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Edit,Read,Write,View,Glob,Grep,Bash(gh:*),Bash(git:*),Bash(date:*),Bash(echo:*),Bash(printf:*)"
+          prompt: |
+            # Monthly Project Health Report
+            
+            Comprehensive monthly health assessment for OnScript API:
+            
+            ## Executive Summary
+            - Overall project health score (Red/Yellow/Green)
+            - Key achievements and major milestones reached
+            - Critical challenges and how they were addressed
+            - Strategic progress toward long-term goals
+            
+            ## Development Metrics Trends
+            - **Velocity Trends**: 3-month velocity comparison and analysis
+            - **Quality Metrics**: Bug rate, test coverage, code review trends
+            - **Technical Debt**: Accumulation vs. paydown over time
+            - **Performance**: Build times, CI/CD efficiency, deployment frequency
+            
+            ## Team & Process Health
+            - **Team Productivity**: Individual and collective performance trends
+            - **Collaboration Quality**: Code review effectiveness, knowledge sharing
+            - **Process Efficiency**: Issue resolution time, planning accuracy
+            - **Tool Effectiveness**: Development tool usage and pain points
+            
+            ## Business Impact Analysis
+            - **Feature Delivery Rate**: User-facing improvements delivered
+            - **Customer Issue Resolution**: Support ticket trends and resolution
+            - **API Performance**: Usage metrics, reliability, response times
+            - **Security Posture**: Vulnerability management, compliance status
+            
+            ## Risk Assessment
+            - **Technical Risks**: Architecture concerns, scalability limits
+            - **Resource Risks**: Team capacity, knowledge concentration
+            - **External Risks**: Dependency issues, vendor relationships
+            - **Timeline Risks**: Milestone feasibility, scope creep
+            
+            ## Strategic Recommendations
+            - **Short-term Actions** (Next 30 days): Immediate improvements needed
+            - **Medium-term Planning** (Next Quarter): Strategic initiatives
+            - **Long-term Vision** (6-12 months): Architecture evolution, team growth
+            - **Investment Priorities**: Areas needing additional focus/resources
+            
+            **Output**: Create comprehensive issue titled "🏥 Monthly Health Report - [Month Year]"
+            **Labels**: `monthly-report`, `health-check`, `strategic-planning`
+
+      - name: Velocity Analysis
+        if: github.event.inputs.report_type == 'velocity_analysis'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Edit,Read,Write,View,Glob,Grep,Bash(gh:*),Bash(git:*),Bash(date:*),Bash(echo:*),Bash(printf:*)"
+          prompt: |
+            # Development Velocity Analysis
+            
+            Deep dive into team velocity and productivity patterns:
+            
+            ## Historical Velocity Trends
+            - Calculate velocity over last 6 sprints/months
+            - Identify patterns, seasonality, and anomalies
+            - Compare planned vs. actual completion rates
+            - Analyze velocity by issue type and complexity
+            
+            ## Productivity Factors Analysis
+            - **Positive Factors**: What increases team velocity
+            - **Impediments**: Common blockers and their impact
+            - **Process Efficiency**: Planning accuracy, requirement clarity
+            - **Technical Factors**: Code quality impact on velocity
+            
+            ## Predictive Insights
+            - Forecast completion dates for current milestones
+            - Identify optimal sprint sizing based on historical data
+            - Predict capacity needs for upcoming features
+            - Risk assessment for timeline commitments
+            
+            ## Optimization Recommendations
+            - Process improvements to increase velocity
+            - Technical investments to reduce friction
+            - Team structure or workflow adjustments
+            - Tool improvements or automation opportunities
+            
+            Create detailed velocity analysis report with actionable recommendations.
+
+      - name: Team Performance Dashboard
+        if: github.event.inputs.report_type == 'team_performance'  
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Edit,Read,Write,View,Glob,Grep,Bash(gh:*),Bash(git:*),Bash(date:*),Bash(echo:*),Bash(printf:*)"
+          prompt: |
+            # Team Performance Dashboard
+            
+            Generate comprehensive team performance analytics:
+            
+            ## Individual Contributions
+            - Analyze contributions by team member (commits, PRs, issues)
+            - Code review participation and quality
+            - Knowledge sharing and mentoring activities
+            - Specialization areas and cross-training progress
+            
+            ## Collaboration Metrics
+            - Cross-team collaboration frequency and effectiveness
+            - Code review response times and thoroughness
+            - Pair programming and knowledge transfer activities
+            - Communication effectiveness in issues and PRs
+            
+            ## Skill Development Tracking
+            - Technical skill progression indicators
+            - New technology adoption and learning
+            - Leadership and process improvement contributions
+            - Documentation and knowledge sharing contributions
+            
+            ## Team Health Indicators
+            - Workload distribution and balance
+            - Burnout risk indicators (overtime, issue resolution stress)
+            - Team morale indicators (communication tone, collaboration willingness)
+            - Growth trajectory and career development progress
+            
+            ## Recommendations
+            - Individual development opportunities
+            - Team balance and workload optimization
+            - Skill gap identification and training needs
+            - Process improvements to support team effectiveness
+            
+            **Note**: Focus on constructive insights that help team growth, not performance evaluation.
+
+      - name: Project Dashboard Update
+        if: github.event.inputs.report_type == 'project_dashboard'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Edit,Read,Write,View,Glob,Grep,Bash(gh:*),Bash(git:*),Bash(date:*),Bash(echo:*),Bash(printf:*)"
+          prompt: |
+            # Project Dashboard Generation
+            
+            Create comprehensive project dashboard for stakeholders:
+            
+            ## Current Project Status
+            - Overall project health and progress summary
+            - Active milestones and their completion status
+            - Critical path items and timeline adherence
+            - Resource utilization and capacity planning
+            
+            ## Key Performance Indicators
+            - **Development KPIs**: Velocity, cycle time, throughput
+            - **Quality KPIs**: Bug rate, test coverage, customer satisfaction
+            - **Process KPIs**: Planning accuracy, estimation reliability
+            - **Business KPIs**: Feature adoption, API usage, performance metrics
+            
+            ## Risk & Issue Management
+            - Active risks and mitigation strategies
+            - Escalated issues requiring stakeholder attention
+            - Dependency management and external blockers
+            - Capacity constraints and resource needs
+            
+            ## Upcoming Deliverables
+            - Next milestone deliverables and dates
+            - Feature roadmap and business impact
+            - Technical initiatives and infrastructure improvements
+            - Integration and deployment planning
+            
+            ## Stakeholder Actions Needed
+            - Decisions requiring stakeholder input
+            - Resource approval requests
+            - Strategic direction clarifications
+            - External dependency escalations
+            
+            **Output**: Create executive-level dashboard issue with clear visual indicators
+            **Labels**: `dashboard`, `stakeholder-report`, `executive-summary`

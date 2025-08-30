@@ -61,7 +61,7 @@ jobs:
             
             ## Effort & Impact Assessment
             - Estimate development effort: Small (1-2 days), Medium (3-5 days), Large (1-2 weeks), XLarge (2+ weeks)
-            - Assess business impact and urgency: Low, Medium, High, Critical
+            - Assess project impact and urgency: Low, Medium, High, Critical
             - Identify security, performance, or architectural implications
             - Check for external dependencies or integration requirements
             
@@ -77,7 +77,7 @@ jobs:
             
             **Path B - Manual Assignment** (Complex or strategic issues):
             - Requires architectural decisions
-            - Complex business logic or user experience considerations  
+            - Complex application logic or user experience considerations  
             - High risk or significant system impact
             - Needs human creativity or judgment
             → Apply label: `manual-assignment`
@@ -113,8 +113,8 @@ jobs:
             ### Technical Assessment
             [Your analysis of technical requirements and complexity]
             
-            ### Business Impact
-            [Assessment of urgency and business value]
+            ### Project Impact
+            [Assessment of urgency and project value]
             
             ### Recommended Next Steps
             [Specific actions based on resolution path chosen]
@@ -223,7 +223,7 @@ jobs:
           prompt: |
             # Automated Sprint Planning
             
-            Conduct intelligent sprint planning for OnScript API:
+            Conduct intelligent sprint planning for the project:
             
             ## Sprint Preparation
             - Analyze team velocity from recent sprints
@@ -278,7 +278,7 @@ jobs:
             - Group related issues for potential consolidation
             
             ## Priority & Effort Assessment
-            - Validate priority assignments against current business needs
+            - Validate priority assignments against current project needs
             - Update effort estimates based on recent development patterns
             - Identify issues that have grown in scope
             - Flag issues with conflicting priorities
