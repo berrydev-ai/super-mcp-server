@@ -196,7 +196,7 @@ jobs:
             - Flag any conflicting or missing labels
             
             ### For Assignment Changes  
-            - Analyze workload distribution across team
+            - Analyze workload distribution across contributors
             - Check assignee expertise match with issue requirements
             - Flag potential overallocation
             - Suggest workload balancing if needed
@@ -211,7 +211,7 @@ jobs:
             - Add helpful comments for significant state changes
             - Update related issues with cross-references
             - Suggest process improvements if patterns emerge
-            - Flag issues that may need team discussion
+            - Flag issues that may need contributor discussion
 
       - name: Sprint Planning Automation
         if: github.event.inputs.management_action == 'sprint_planning'
@@ -226,10 +226,10 @@ jobs:
             Conduct intelligent sprint planning for the project:
             
             ## Sprint Preparation
-            - Analyze team velocity from recent sprints
+            - Analyze project velocity from recent sprints
             - Review current issue priorities and estimates
             - Identify blocking dependencies
-            - Calculate available team capacity
+            - Calculate available project capacity
             
             ## Sprint Composition Strategy
             - **70% Features/Enhancements**: High-priority user-facing improvements
@@ -253,7 +253,7 @@ jobs:
             Generate comprehensive sprint planning document including:
             - Sprint scope and objectives
             - Selected issues with rationale
-            - Team capacity analysis
+            - Project capacity analysis
             - Risk factors and mitigation strategies
             - Definition of Done checklist
             
@@ -298,7 +298,7 @@ jobs:
             ## Triage Report
             Create comprehensive triage report with:
             - Issues processed and changes made
-            - Recommendations for team follow-up
+            - Recommendations for contributor follow-up
             - Process improvement suggestions
             - Metrics on issue backlog health
 
