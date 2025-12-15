@@ -3,7 +3,7 @@ module super-mcp-server
 go 1.24.4
 
 require (
-	github.com/aws/aws-lambda-go v1.49.0
+	github.com/aws/aws-lambda-go v1.51.0
 	github.com/modelcontextprotocol/go-sdk v0.3.0
 )
 
